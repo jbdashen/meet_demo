@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http: https: ws: wss:; script-src 'self'; img-src 'self' data: blob:; media-src https: http: blob:;" />
+  <title>参会者</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: transparent;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #panel {
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: rgba(20, 20, 28, 0.85);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(79, 140, 255, 0.5);
+    }
+    #header {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      background: rgba(40, 40, 50, 0.9);
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+    }
+    #title {
+      color: #ccc;
+      font-size: 12px;
+    }
+    #closeBtn {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: rgba(220, 60, 60, 0.9);
+      color: #fff;
+      border: none;
+      font-size: 11px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #closeBtn:hover { background: #d04040; }
+    #list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      /* 始终预留滚动条槽位: 防止"内容恰好放下 ↔ 差 1px 出现滚动条"
+         两种状态逐帧切换导致格子宽度/高度反复跳动(面板晃动) */
+      scrollbar-gutter: stable;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cell {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .cell video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    /* 本机自己的摄像头: 镜像显示(像照镜子); 其他参会者保持原方向 */
+    .cell.self video {
+      transform: scaleX(-1);
+    }
+    .cell .name {
+      position: absolute;
+      bottom: 2px; left: 4px;
+      color: #fff;
+      font-size: 10px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+    /* 麦克风状态角标: 右上角, 与主窗口同款白色麦克风轮廓+绿色水位 */
+    .mic {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+      transition: background .15s;
+    }
+    .mic svg { display: block; }
+    /* 说话时图标背景泛绿 + 格子绿框 */
+    .cell.speaking { box-shadow: 0 0 0 2px #17c98b inset; }
+    .cell.speaking .mic { background: rgba(23,201,139,.35); }
+    .mic .muted-slash { display: none; }
+    /* 静音: 麦克风变灰, 显示红色斜杠, 水位不亮 */
+    .mic.muted { background: rgba(0,0,0,.5); }
+    .mic.muted svg g.body { stroke: #9a9aa6; }
+    .mic.muted .muted-slash { display: block; }
+    #list::-webkit-scrollbar { width: 4px; }
+    #list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <div id="header">
+      <span id="title">参会者</span>
+      <button id="closeBtn" title="关闭浮窗">✕</button>
+    </div>
+    <div id="list"></div>
+  </div>
+  <script src="socket.io.js"></script>
+  <script src="video-panel.js"></script>
+</body>
+</html>

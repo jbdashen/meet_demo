@@ -1,0 +1,412 @@
+/* 会议 demo 样式 */
+:root {
+  --bg: #1e1e24;
+  --panel: #2a2a33;
+  --text: #f0f0f0;
+  --muted: #9a9aa6;
+  --accent: #4f8cff;
+  --danger: #e0564f;
+  --ok: #4fc38f;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+.hidden { display: none !important; }
+
+/* 加入面板 */
+#joinPanel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+#joinPanel h1 { margin: 0 0 24px; font-weight: 600; }
+.panel {
+  width: 360px;
+  background: var(--panel);
+  padding: 24px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.row label {
+  width: 56px;
+  flex: none;
+  text-align: right;
+  color: var(--muted);
+  font-size: 14px;
+}
+.row input {
+  flex: 1;
+  min-width: 0;
+  background: #1a1a20;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 14px;
+}
+#joinBtn { width: 100%; padding: 10px; font-size: 15px; }
+.hint { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0; text-align: center; }
+
+/* 信令服务器开关卡片 */
+.server-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: #1a1a20;
+  border: 1px solid #3a3a44;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.server-box .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: #6b6b76;
+}
+.server-box .dot.running { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.server-box .dot.starting { background: #e0a83e; animation: pulse 1s infinite; }
+.server-box .dot.stopped, .server-box .dot.error { background: var(--danger); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.server-text { flex: 1; min-width: 0; }
+.srv-name { font-size: 13px; }
+.srv-name #srvState { color: var(--muted); font-size: 12px; }
+.srv-input {
+  width: 100%;
+  margin-top: 4px;
+  background: #101015;
+  border: 1px solid #34343e;
+  border-radius: 5px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.srv-input:focus { outline: none; border-color: var(--accent); }
+.srv-input:disabled { opacity: .6; }
+#srvToggle { flex: none; align-self: center; }
+
+/* 禁用态按钮 */
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.btn {
+  background: #3a3a44;
+  color: var(--text);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease;
+}
+/* 点击反馈: 按钮下压, 让用户确认"点到了" */
+.btn.pressed, .ctrl.pressed {
+  transform: scale(.94);
+  filter: brightness(1.25);
+}
+.btn.primary { background: var(--accent); }
+.btn.danger { background: var(--danger); }
+.btn.small { padding: 6px 10px; font-size: 12px; }
+.btn:hover { filter: brightness(1.1); }
+
+/* 会议视图 */
+#meetView {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--panel);
+}
+.topbar .title { font-weight: 600; }
+.room-tag, .count { color: var(--muted); font-size: 13px; }
+/* 控制栏放在顶部, 占据中间空间靠右 */
+.topbar .controls {
+  margin-left: auto;
+  height: auto;
+  background: transparent;
+  gap: 10px;
+}
+/* 离开按钮紧跟控制栏 */
+.topbar #leaveBtn { margin-left: 0; }
+
+/* 网格 */
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  overflow: auto;
+}
+/* 屏幕共享时 grid 不隐藏, 改成底部小条, 这样其他人的屏幕共享格子仍可见可点 */
+.grid.screen-sharing {
+  flex: none;
+  height: 118px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.grid.screen-sharing .cell {
+  flex: none;
+  width: 180px;
+  height: 102px;
+  aspect-ratio: auto;
+}
+
+/* 屏幕共享大屏 */
+#screenVideo, #screenCanvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  pointer-events: none; /* 不拦截鼠标, 让画中画小窗能接收拖拽事件 */
+}
+
+/* 远端屏幕共享格子: 标签前加"屏幕"角标 */
+.cell.screen-cell .label::before {
+  content: "🖥 ";
+}
+
+/* 单格放大层 */
+#focusOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#focusVideo {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+/* 放大的是本地摄像头时同样镜像 */
+#focusVideo.mirror {
+  transform: scaleX(-1);
+}
+.focus-label {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(0,0,0,.6);
+  padding: 4px 12px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+.focus-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 310;
+}
+.focus-close:hover { background: rgba(255,255,255,.3); }
+
+.cell {
+  position: relative;
+  background: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  cursor: pointer;
+}
+.cell video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+/* 本地摄像头镜像显示(像照镜子); 远端摄像头与所有屏幕共享画面保持原方向 */
+#localVideo {
+  transform: scaleX(-1);
+}
+.cell .label {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0,0,0,.55);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+/* 双击全屏提示 */
+.cell .fs-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0,0,0,.5);
+  padding: 2px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+.cell:hover .fs-hint { opacity: 1; }
+
+/* 本地昵称标签条: 昵称在左, 麦克风音量图标在右, 同高 */
+#localCell.label,
+.cell #localLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#localCell .mic-level {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  flex: none;
+}
+#localCell .mic-level svg { display: block; }
+/* 静音时图标变灰, 绿色水位隐藏 */
+#localCell .mic-level.muted { opacity: 0.45; }
+#localCell .mic-level.muted svg g[stroke] { stroke: #c5c9ce; }
+
+/* 屏幕共享时, 本地摄像头变画中画小窗: 浮在屏幕共享画面上, 可拖拽 */
+#localCell.pip {
+  position: absolute;
+  width: 200px;
+  height: 112px;
+  bottom: 48px;
+  right: 16px;
+  z-index: 100;
+  border: 2px solid #4f8cff;
+  cursor: move;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+}
+#localCell.pip:active { cursor: grabbing; }
+/* 子元素不拦截鼠标, 确保拖拽事件落到 localCell 上 */
+#localCell.pip > * { pointer-events: none; }
+
+/* 控制栏 */
+.controls {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--panel);
+}
+.ctrl {
+  background: #3a3a44;
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 96px;
+}
+.ctrl.on { background: var(--accent); }
+.ctrl.toggle-off { background: var(--danger); }
+
+/* 设备选择下拉组 */
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ctrl-select {
+  background: #3a3a44;
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 150px;
+}
+.ctrl-icon {
+  background: #3a3a44;
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+.ctrl-icon.on { background: var(--accent); }
+.ctrl-icon.toggle-off { background: var(--danger); }
+
+/* 摄像头画面右下角麦克风静音图标 */
+.mic-indicator {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* 状态栏 */
+#statusBar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  background: #17171c;
+  font-size: 12px;
+}
+.st { color: var(--muted); }
+.st.ok { color: var(--ok); }
+.st.err { color: #ff6b6b; }

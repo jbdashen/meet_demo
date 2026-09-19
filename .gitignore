@@ -1,0 +1,18 @@
+# 依赖
+node_modules/
+
+# 打包产物
+dist/
+dist2/
+
+# Electron 运行时用户数据(双开测试/信令注入缓存)
+.electron_user_data/
+.electron_user_data_b/
+
+# 日志与临时文件
+*.log
+_*
+
+# 系统/编辑器
+Thumbs.db
+.DS_Store

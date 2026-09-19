@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>摄像头</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #pip {
+      width: 100%; height: 100%;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+      border: 2px solid #4f8cff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      -webkit-app-region: drag;
+    }
+    #closeBtn {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(220, 60, 60, 0.9);
+      color: #fff;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: no-drag;
+      z-index: 10;
+    }
+    #closeBtn:hover { background: #d04040; }
+    #label {
+      position: absolute;
+      bottom: 4px; left: 6px;
+      color: #fff;
+      font-size: 11px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      -webkit-app-region: no-drag;
+    }
+  </style>
+</head>
+<body>
+  <div id="pip">
+    <video id="cam" autoplay muted playsinline></video>
+    <button id="closeBtn" title="停止共享">✕</button>
+    <span id="label">摄像头</span>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+  </script>
+  <script src="camera-pip.js"></script>
+</body>
+</html>

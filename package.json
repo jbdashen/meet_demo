@@ -1,0 +1,56 @@
+{
+  "name": "meet_demo",
+  "version": "1.0.0",
+  "description": "桌面会议 demo (Electron + WebRTC + socket.io)",
+  "main": "main.js",
+  "scripts": {
+    "server": "node server/index.js",
+    "start": "electron .",
+    "dev": "concurrently \"npm:server\" \"npm:start\"",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0",
+    "socket.io-client": "^4.7.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "allowScripts": {
+    "electron@31.0.0": true
+  },
+  "build": {
+    "appId": "com.demo.meet",
+    "productName": "MeetDemo",
+    "asar": true,
+    "electronVersion": "31.0.0",
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server/**/*",
+      "renderer/**/*",
+      "!renderer/.**",
+      "!renderer/camera-pip.*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "MeetDemo-${version}-portable.exe"
+    }
+  }
+}
+

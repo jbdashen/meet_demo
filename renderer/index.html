@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http: https: ws: wss:; script-src 'self'; img-src 'self' data: blob:; media-src https: http: blob:;" />
+  <title>会议 Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 加入房间面板 -->
+  <div id="joinPanel" class="panel">
+    <h1>会议 Demo</h1>
+    <!-- 信令服务器: 本机保持默认即可; 其他电脑填主机的虚拟局域网 IP(如 Radmin VPN 的 26.x.x.x) -->
+    <div class="server-box">
+      <span class="dot" id="srvDot"></span>
+      <div class="server-text">
+        <div class="srv-name">信令服务器 <span id="srvState">未开启</span></div>
+        <input id="srvAddr" class="srv-input" spellcheck="false" placeholder="主机 IP, 如 26.x.x.x" />
+      </div>
+      <button id="srvToggle" class="btn small">连接</button>
+    </div>
+    <div class="row">
+      <label>昵称</label>
+      <input id="nick" type="text" placeholder="输入昵称" value="用户" />
+    </div>
+    <div class="row">
+      <label>房间号</label>
+      <input id="roomId" type="text" placeholder="输入或随机" value="100" />
+      <button id="randomBtn" class="btn small" title="随机生成房间号">随机</button>
+    </div>
+    <button id="joinBtn" class="btn primary" disabled>加入会议</button>
+    <p class="hint" id="hint">主机保持默认地址；其他电脑填入主机 IP 后点连接，再用相同房间号入会。</p>
+  </div>
+
+  <!-- 会议中 -->
+  <div id="meetView" class="hidden">
+    <div class="topbar">
+      <span class="title">会议 Demo</span>
+      <span class="room-tag" id="roomTag">房间: --</span>
+      <span class="count" id="countTag">1 人</span>
+      <!-- 控制按钮放在顶部: 设备下拉选择 + 开关 -->
+      <div class="controls">
+        <div class="ctrl-group">
+          <select id="micSelect" class="ctrl-select" title="选择麦克风"></select>
+          <button id="micMuteBtn" class="ctrl-icon on" title="静音/恢复麦克风">🎤</button>
+        </div>
+        <div class="ctrl-group">
+          <select id="camSelect" class="ctrl-select" title="选择摄像头"></select>
+          <button id="camToggleBtn" class="ctrl-icon on" title="关/开摄像头">📷</button>
+        </div>
+        <button id="screenBtn" class="ctrl" title="共享屏幕">共享屏幕</button>
+        <button id="pipBtn" class="ctrl" title="打开/关闭置顶参会者浮窗">参会者浮窗</button>
+      </div>
+      <button id="leaveBtn" class="btn danger">离开</button>
+    </div>
+
+    <!-- 视频网格: 本地 + 远端(每人一个) -->
+    <div id="grid" class="grid">
+      <div class="cell" id="localCell">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <div class="label" id="localLabel">
+          <span id="localName">用户 (我)</span>
+          <!-- 本地麦克风音量: 与昵称同高, 图标内绿色水位随说话大小涨落, 位于右侧 -->
+          <span class="mic-level" id="micLevel">
+            <svg viewBox="0 0 40 50" width="11" height="14">
+              <defs>
+                <clipPath id="micCapsule">
+                  <rect x="9" y="2" width="22" height="28" rx="11" />
+                </clipPath>
+              </defs>
+              <g clip-path="url(#micCapsule)">
+                <rect id="micWater" x="9" y="30" width="22" height="0" fill="#17c98b" />
+              </g>
+              <g fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="2" width="22" height="28" rx="11" />
+                <path d="M8 18 a12 12 0 0 0 24 0" />
+                <line x1="20" y1="33" x2="20" y2="41" />
+                <line x1="14" y1="44" x2="26" y2="44" />
+              </g>
+            </svg>
+          </span>
+        </div>
+        <div class="fs-hint">点击放大</div>
+      </div>
+    </div>
+
+    <!-- 屏幕共享大屏: 屏幕共享时铺满主区域, 摄像头变画中画小窗 -->
+    <video id="screenVideo" autoplay muted playsinline class="hidden"></video>
+    <canvas id="screenCanvas" class="hidden"></canvas>
+
+    <!-- 单格放大层: 点击任意视频/共享屏格子后, 把该路画面放大铺满; 点背景/Esc/× 退出 -->
+    <div id="focusOverlay" class="hidden">
+      <video id="focusVideo" autoplay playsinline></video>
+      <div class="focus-label" id="focusLabel"></div>
+      <button id="focusClose" class="focus-close" title="退出放大 (Esc)">×</button>
+    </div>
+
+    <!-- 状态栏: 显示信令连接 + 媒体错误, 便于诊断 -->
+    <div id="statusBar">
+      <span id="statusConn" class="st">信令: 未连接</span>
+      <span id="statusMedia" class="st"></span>
+    </div>
+  </div>
+
+  <script src="socket.io.js"></script>
+  <script src="app.js"></script>
+  <script src="debug.js"></script>
+</body>
+</html>
