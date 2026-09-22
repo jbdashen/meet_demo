@@ -70,14 +70,22 @@
     rtcpMuxPolicy: 'require',
   };
 
-  // 发送端编码档位: 屏幕共享按"分辨率×帧率"给足码率, 这是 1K 清晰的关键
+  // 发送端编码档位: 屏幕共享按"分辨率×帧率"给足码率, 追求"所见即所得"
   // (不显式设置时 Chromium 默认码率上限偏低, 高动态画面会被压糊)
-  // [30fps 档, 60fps 档], 单位 bps
+  // [30fps 档, 60fps 档], 单位 bps —— 高码率保证文字锐利, 编码器按需使用不会超标
   const SCREEN_BITRATE = {
-    '1920x1080': [4_500_000, 9_000_000],   // 1K: 30fps 4.5M / 60fps 9M
-    '2560x1440': [8_000_000, 14_000_000],  // 2K
-    '3840x2160': [16_000_000, 28_000_000], // 4K
+    '1920x1080': [10_000_000, 18_000_000],  // 1K: 30fps 10M / 60fps 18M
+    '2560x1440': [16_000_000, 30_000_000],  // 2K
+    '3840x2160': [32_000_000, 55_000_000],  // 4K
   };
+  // 根据实际捕获分辨率动态计算码率(原画模式或非标准分辨率)
+  // bpp(每像素比特): 0.12 对屏幕文字内容已接近无损观感
+  function calcBitrate(width, height, fps) {
+    const key = `${width}x${height}`;
+    if (SCREEN_BITRATE[key]) return fps >= 60 ? SCREEN_BITRATE[key][1] : SCREEN_BITRATE[key][0];
+    const bpp = 0.12;
+    return Math.max(4_000_000, Math.round(width * height * fps * bpp));
+  }
   // 摄像头档位: 720p 流畅优先
   const CAMERA_PROFILE = { maxBitrate: 1_200_000, maxFramerate: 30, degradation: 'maintain-framerate' };
   // 音频: Opus 32kbps, 弱网靠 FEC 抗丢包 + DTX 静音省带宽(另在 SDP 里开启)
@@ -95,8 +103,7 @@
       if (profile.maxBitrate != null) enc.maxBitrate = profile.maxBitrate;
       if (profile.maxFramerate != null) enc.maxFramerate = profile.maxFramerate;
       if (profile.degradation) {
-        // maintain-framerate: 弱网降分辨率保帧率(60fps 流畅档, 宁糊不卡)
-        // maintain-resolution: 弱网丢帧保清晰度(30fps 清晰档, 文字始终锐利)
+        // 屏幕共享始终 maintain-resolution: 弱网丢帧保清晰度, 接收端分辨率与发送端一致
         params.degradationPreference = profile.degradation;
       }
       if (profile.priority) enc.priority = profile.priority;
@@ -716,39 +723,33 @@
       // 3. 把选中的源 id 发给主进程, 然后用 getDisplayMedia 获取流
       await window.api.setScreenSource(picked.source.id);
       setStatusMedia('正在共享屏幕…');
+      // 原画模式(width=0)不约束分辨率, 让浏览器以屏幕原生分辨率捕获
+      const isNative = picked.width === 0;
+      const videoConstraints = isNative
+        ? { frameRate: { ideal: picked.frameRate }, cursor: 'always' }
+        : { width: { ideal: picked.width }, height: { ideal: picked.height }, frameRate: { ideal: picked.frameRate }, cursor: 'always' };
       const got = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          width: { ideal: picked.width },
-          height: { ideal: picked.height },
-          frameRate: { ideal: picked.frameRate },
-          cursor: 'always',
-        },
+        video: videoConstraints,
         audio: false,
       });
       screenStream = got;
       activeLocalTrackType = 'screen';
 
-      // 根据"分辨率×帧率"计算编码档位
-      const bitrateRow = SCREEN_BITRATE[`${picked.width}x${picked.height}`] || SCREEN_BITRATE['1920x1080'];
-      // 实际捕获分辨率可能高于所选(如 2K/4K 屏选 1K), 计算编码缩放系数, 保证输出就是选定的 1K
+      // 根据实际捕获分辨率计算编码档位(原画模式用原生分辨率算码率)
       const capSettings = screenStream.getVideoTracks()[0].getSettings() || {};
-      const scaleResolutionDownBy = capSettings.width
-        ? Math.max(1, Math.round((capSettings.width / picked.width) * 100) / 100) : 1;
-      if (picked.frameRate >= 60) {
-        // 60fps 流畅档: 给足码率, 弱网时降分辨率保帧率(宁糊不卡), motion 提示走流畅优化
-        screenProfile = {
-          maxBitrate: bitrateRow[1], maxFramerate: 60,
-          degradation: 'maintain-framerate', priority: 'high', networkPriority: 'high',
-          scaleResolutionDownBy,
-        };
-      } else {
-        // 30fps 清晰档: 弱网时丢帧保 1K 清晰度(文字锐利不糊), 延迟不堆积
-        screenProfile = {
-          maxBitrate: bitrateRow[0], maxFramerate: 30,
-          degradation: 'maintain-resolution', priority: 'high', networkPriority: 'high',
-          scaleResolutionDownBy,
-        };
-      }
+      const encW = capSettings.width || picked.width;
+      const encH = capSettings.height || picked.height;
+      const maxBitrate = calcBitrate(encW, encH, picked.frameRate);
+      // 原画模式不缩放; 其他模式按所选分辨率缩放, 保证输出分辨率与选择一致
+      const scaleResolutionDownBy = isNative
+        ? 1
+        : (capSettings.width ? Math.max(1, Math.round((capSettings.width / picked.width) * 100) / 100) : 1);
+      // 始终 maintain-resolution: 弱网时丢帧保清晰度, 确保接收端看到的分辨率与发送端一致
+      screenProfile = {
+        maxBitrate, maxFramerate: picked.frameRate,
+        degradation: 'maintain-resolution', priority: 'high', networkPriority: 'high',
+        scaleResolutionDownBy,
+      };
 
       // 屏幕共享画面 → video 直接显示
       screenVideo.srcObject = screenStream;
@@ -758,7 +759,7 @@
       // 隐藏本地画中画(主窗口最小化后看不到了)
       localCell.classList.add('hidden');
 
-      setStatusMedia(`屏幕共享中 ${picked.width}×${picked.height} @ ${picked.frameRate}fps`, false);
+      setStatusMedia(`屏幕共享中 ${encW}×${encH} @ ${picked.frameRate}fps`, false);
 
       // 把屏幕轨道加入所有已有连接
       const track = screenStream.getVideoTracks()[0];
@@ -802,9 +803,9 @@
 
     // label 中标注推荐码率, 方便对照网络情况选择
     const QUALITY = [
-      { label: '高清1K (推荐)', width: 1920, height: 1080 },
+      { label: '高清1K', width: 1920, height: 1080 },
       { label: '2K', width: 2560, height: 1440 },
-      { label: '原画4K', width: 3840, height: 2160 },
+      { label: '原画(不缩放)', width: 0, height: 0 },  // 0 = 屏幕原生分辨率, 接收端所见即所得
     ];
     // 30fps = 清晰优先(弱网丢帧保文字锐利); 60fps = 流畅优先(弱网降清晰度保帧率)
     const FRAMES = [
@@ -812,8 +813,8 @@
       { fps: 60, label: '60 fps · 流畅优先' },
     ];
 
-    let selQuality = 0;   // 默认 1K
-    let selFrame = 1;     // 默认 60fps 流畅档
+    let selQuality = 2;   // 默认原画(不缩放), 追求所见即所得
+    let selFrame = 0;     // 默认 30fps 清晰优先
     let pickedSource = null;
 
     const overlay = document.createElement('div');
@@ -845,7 +846,7 @@
     qBox.innerHTML = '<span style="color:#aaa;font-size:13px;">画质:</span>';
     QUALITY.forEach((q, i) => {
       const btn = document.createElement('button');
-      btn.textContent = `${q.label} (${q.width}×${q.height})`;
+      btn.textContent = q.width > 0 ? `${q.label} (${q.width}×${q.height})` : q.label;
       btn.style.cssText = 'padding:5px 10px;background:#3a3a44;color:#eee;border:none;border-radius:4px;cursor:pointer;font-size:12px;';
       if (i === selQuality) btn.style.background = '#4f8cff';
       btn.onclick = () => {
@@ -876,7 +877,7 @@
     // 弱网自适应说明
     const netHint = document.createElement('div');
     netHint.style.cssText = 'margin-top:10px;font-size:12px;color:#8fa3bf;line-height:1.5;';
-    netHint.textContent = '弱网自动适配: 60fps 档网速差时自动降低清晰度保流畅(适当丢包); 30fps 档自动丢帧保画面清晰。音频开启抗丢包, 断线自动重连。';
+    netHint.textContent = '原画模式以屏幕原生分辨率编码, 接收端所见即所得。弱网时自动丢帧保清晰度(不降分辨率)。音频开启抗丢包, 断线自动重连。';
     box.appendChild(netHint);
 
     // 按钮行

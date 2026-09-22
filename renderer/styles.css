@@ -16,6 +16,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .hidden { display: none !important; }
@@ -28,11 +29,12 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 24px;
+  padding: 20px;
 }
 #joinPanel h1 { margin: 0 0 24px; font-weight: 600; }
 .panel {
-  width: 360px;
+  width: 100%;
+  max-width: 360px;
   background: var(--panel);
   padding: 24px;
   border-radius: 12px;
@@ -264,6 +266,10 @@ html, body {
   height: 100%;
   object-fit: cover;
   background: #000;
+}
+/* 屏幕共享格子不裁剪: 接收端看到完整画面, 与分享者所见一致 */
+.cell.screen-cell video {
+  object-fit: contain;
 }
 /* 本地摄像头镜像显示(像照镜子); 远端摄像头与所有屏幕共享画面保持原方向 */
 #localVideo {

@@ -8,28 +8,30 @@
 </head>
 <body>
   <!-- 加入房间面板 -->
-  <div id="joinPanel" class="panel">
-    <h1>会议 Demo</h1>
-    <!-- 信令服务器: 本机保持默认即可; 其他电脑填主机的虚拟局域网 IP(如 Radmin VPN 的 26.x.x.x) -->
-    <div class="server-box">
-      <span class="dot" id="srvDot"></span>
-      <div class="server-text">
-        <div class="srv-name">信令服务器 <span id="srvState">未开启</span></div>
-        <input id="srvAddr" class="srv-input" spellcheck="false" placeholder="主机 IP, 如 26.x.x.x" />
+  <div id="joinPanel">
+    <div class="panel">
+      <h1>会议 Demo</h1>
+      <!-- 信令服务器: 本机保持默认即可; 其他电脑填主机的虚拟局域网 IP(如 Radmin VPN 的 26.x.x.x) -->
+      <div class="server-box">
+        <span class="dot" id="srvDot"></span>
+        <div class="server-text">
+          <div class="srv-name">信令服务器 <span id="srvState">未开启</span></div>
+          <input id="srvAddr" class="srv-input" spellcheck="false" placeholder="主机 IP, 如 26.x.x.x" />
+        </div>
+        <button id="srvToggle" class="btn small">连接</button>
       </div>
-      <button id="srvToggle" class="btn small">连接</button>
+      <div class="row">
+        <label>昵称</label>
+        <input id="nick" type="text" placeholder="输入昵称" value="用户" />
+      </div>
+      <div class="row">
+        <label>房间号</label>
+        <input id="roomId" type="text" placeholder="输入或随机" value="100" />
+        <button id="randomBtn" class="btn small" title="随机生成房间号">随机</button>
+      </div>
+      <button id="joinBtn" class="btn primary" disabled>加入会议</button>
+      <p class="hint" id="hint">主机保持默认地址；其他电脑填入主机 IP 后点连接，再用相同房间号入会。</p>
     </div>
-    <div class="row">
-      <label>昵称</label>
-      <input id="nick" type="text" placeholder="输入昵称" value="用户" />
-    </div>
-    <div class="row">
-      <label>房间号</label>
-      <input id="roomId" type="text" placeholder="输入或随机" value="100" />
-      <button id="randomBtn" class="btn small" title="随机生成房间号">随机</button>
-    </div>
-    <button id="joinBtn" class="btn primary" disabled>加入会议</button>
-    <p class="hint" id="hint">主机保持默认地址；其他电脑填入主机 IP 后点连接，再用相同房间号入会。</p>
   </div>
 
   <!-- 会议中 -->

@@ -392,6 +392,7 @@ function createWindow() {
     width: 400,
     height: 500,
     title: '会议 Demo',
+    backgroundColor: '#1e1e24',
     webPreferences: {
       // 屏幕共享需要 navigator.getDisplayMedia, 桌面端 Electron 原生支持
       contextIsolation: true,
